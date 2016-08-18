@@ -1,5 +1,9 @@
 language: node_js
 sudo: false
+before_script:
+  - npm run db:setup:user
+  - npm run db:reset
+
 node_js:
   - 5
 env:
