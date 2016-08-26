@@ -1,9 +1,21 @@
 'use strict';
 
-const Controller = require('../../../../lib/plugins/features/movies/controller');
-const Movie      = require('../../../../lib/models/movie');
+const Controller   = require('../../../../lib/plugins/features/movies/controller');
+const Knex         = require('../../../../lib/libraries/knex');
+const Movie        = require('../../../../lib/models/movie');
+const MovieFactory = require('../../../factories/movie');
+
+const movieA = MovieFactory.build({ release_year: '1983', title: 'movieA' });
+const movieB = MovieFactory.build({ release_year: '1986' });
 
 describe('movie controller', () => {
+
+  beforeEach(() => {
+    return Knex.raw('TRUNCATE movies CASCADE')
+    .then(() => {
+      return Knex('movies').insert([movieA, movieB]);
+    });
+  });
 
   describe('create', () => {
 
@@ -20,6 +32,44 @@ describe('movie controller', () => {
       });
     });
 
+  });
+
+  describe('findAll', () => {
+
+    it('queries the database by year', () => {
+      const filter = { min_year: 1983, max_year: 1983 };
+      return Controller.findAll(filter)
+      .then((movies) => {
+        expect(movies.at(0).get('release_year')).to.eql(1983);
+      });
+    });
+
+    it('queries the database by years', () => {
+      const filter = { min_year: 1983, max_year: 1986 };
+
+      return Controller.findAll(filter)
+      .then((movies) => {
+        expect(movies.at(0).get('release_year')).to.eql(1983);
+        expect(movies.at(1).get('release_year')).to.eql(1986);
+      });
+    });
+
+    it('queries the database by title', () => {
+      const filter = { title: 'movieA' };
+
+      return Controller.findAll(filter)
+      .then((movies) => {
+        expect(movies).to.have.length(1);
+        expect(movies.at(0).get('title')).to.eql('movieA');
+      });
+    });
+
+    it('gets all with no filter', () => {
+      return Controller.findAll()
+      .then((movies) => {
+        expect(movies).to.have.length(2);
+      });
+    });
   });
 
 });
