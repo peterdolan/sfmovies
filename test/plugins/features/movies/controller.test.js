@@ -1,19 +1,30 @@
 'use strict';
 
-const Controller   = require('../../../../lib/plugins/features/movies/controller');
-const Knex         = require('../../../../lib/libraries/knex');
-const Movie        = require('../../../../lib/models/movie');
-const MovieFactory = require('../../../factories/movie');
+const Bluebird = require('bluebird');
+
+const Controller      = require('../../../../lib/plugins/features/movies/controller');
+const Knex            = require('../../../../lib/libraries/knex');
+const Movie           = require('../../../../lib/models/movie');
+const MovieFactory    = require('../../../factories/movie');
+const LocationFactory = require('../../../factories/location');
 
 const movieA = MovieFactory.build({ release_year: '1983', title: 'movieA' });
 const movieB = MovieFactory.build({ release_year: '1986' });
 
+const locationA = LocationFactory.build({ location: 'NYC', movie_id: movieA.id });
+
 describe('movie controller', () => {
 
   beforeEach(() => {
-    return Knex.raw('TRUNCATE movies CASCADE')
+    return Bluebird.all([
+      Knex.raw('TRUNCATE movies CASCADE'),
+      Knex.raw('TRUNCATE locations CASCADE')
+    ])
     .then(() => {
-      return Knex('movies').insert([movieA, movieB]);
+      return Bluebird.all([
+        Knex('movies').insert([movieA, movieB]),
+        Knex('locations').insert([locationA])
+      ]);
     });
   });
 
@@ -57,6 +68,15 @@ describe('movie controller', () => {
     it('queries the database by title', () => {
       const filter = { title: 'movieA' };
 
+      return Controller.findAll(filter)
+      .then((movies) => {
+        expect(movies).to.have.length(1);
+        expect(movies.at(0).get('title')).to.eql('movieA');
+      });
+    });
+
+    it('queries the database by location', () => {
+      const filter = { location: 'NYC' };
       return Controller.findAll(filter)
       .then((movies) => {
         expect(movies).to.have.length(1);
