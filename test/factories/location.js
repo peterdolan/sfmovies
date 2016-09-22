@@ -3,6 +3,5 @@
 const Factory = require('rosie').Factory;
 
 module.exports = Factory.define('movie')
-  .sequence('id',  (i) => `${i}`)
-  .attr('title', '')
-  .attr('release_year', '');
+  .attr('location', '')
+  .attr('movie_id', '');
